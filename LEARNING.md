@@ -494,10 +494,109 @@ async with ClaudeSDKClient(options=options) as client:
 
 ---
 
+### 実習7: カスタムツール定義（2026/01/05）
+
+#### 作成ファイル
+`04_custom_tool.py`
+
+#### カスタムツールの作成手順
+
+```
+1. @toolデコレータでツール関数を定義
+   ↓
+2. create_sdk_mcp_serverでMCPサーバーを作成
+   ↓
+3. ClaudeAgentOptionsでmcp_serversを指定
+   ↓
+4. ClaudeSDKClientでエージェントを実行
+```
+
+#### 重要: query() vs ClaudeSDKClient
+
+| 機能 | `query()` | `ClaudeSDKClient` |
+|------|-----------|-------------------|
+| カスタムツール | ❌ 未対応 | ✅ 対応 |
+
+**カスタムツールを使う場合は必ず `ClaudeSDKClient` を使用する。**
+
+#### コードの構造
+
+```python
+# 1. ツール定義
+@tool(
+    "add",                      # ツール名
+    "2つの数値を足し算します",    # 説明（AIが参照）
+    {"a": float, "b": float}    # パラメータスキーマ
+)
+async def add_numbers(args: dict[str, Any]) -> dict[str, Any]:
+    result = args["a"] + args["b"]
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"{args['a']} + {args['b']} = {result}"
+        }]
+    }
+
+# 2. MCPサーバー作成
+calculator_server = create_sdk_mcp_server(
+    name="calculator",
+    version="1.0.0",
+    tools=[add_numbers, ...]
+)
+
+# 3. オプション設定
+options = ClaudeAgentOptions(
+    mcp_servers={"calculator": calculator_server},
+    allowed_tools=["mcp__calculator__add", ...]
+)
+
+# 4. 実行（ClaudeSDKClientを使用）
+async with ClaudeSDKClient(options=options) as client:
+    await client.query("計算して")
+```
+
+#### ツール名の命名規則
+
+```
+mcp__{server_name}__{tool_name}
+
+例：
+- mcp__calculator__add
+- mcp__calculator__multiply
+- mcp__calculator__celsius_to_fahrenheit
+```
+
+#### 実行結果の観察
+
+```
+[Tool] mcp__calculator__add
+[Tool] mcp__calculator__multiply
+[Tool] mcp__calculator__celsius_to_fahrenheit
+       [実行] add(123, 456) = 579
+       [実行] multiply(7, 8) = 56
+       [実行] celsius_to_fahrenheit(25) = 77.0
+[Claude] 計算結果は以下の通りです：
+1. 123 + 456 = 579
+2. 7 × 8 = 56
+3. 25°C = 77.0°F
+```
+
+- 3つのツールが**並列実行**された
+- カスタムPython関数が実行され、結果がエージェントに返された
+
+#### 学んだこと
+- **@toolデコレータ**: ツール名、説明、スキーマを指定
+- **create_sdk_mcp_server**: ツールをMCPサーバーにまとめる
+- **戻り値形式**: `{"content": [{"type": "text", "text": "..."}]}`
+- **query()の制限**: カスタムツールには`ClaudeSDKClient`が必須
+- **並列実行**: 複数のカスタムツールを同時に呼び出せる
+
+---
+
 ## 次のステップ
 
 応用サンプルの候補：
 1. ~~ファイル操作エージェント（Write/Edit使用）~~ ✅ 完了
 2. ~~会話型エージェント（ClaudeSDKClient使用）~~ ✅ 完了
-3. カスタムツール定義
+3. ~~カスタムツール定義~~ ✅ 完了
 4. Hooks（ライフサイクル介入）
