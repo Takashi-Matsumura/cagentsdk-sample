@@ -12,11 +12,12 @@
 - [x] 基本サンプル作成・実行（`01_basic_query.py`）
 - [x] 認証の仕組みの理解（Claude Code CLIを使用）
 - [x] ファイル操作エージェント（`02_file_agent.py`）
+- [x] 会話型エージェント（`03_conversation_agent.py`）
 
 ### 次のステップ（ユーザーに選択してもらう）
 応用サンプルの作成。以下の候補がある：
 1. ~~ファイル操作エージェント（Write/Edit使用）~~ ✅
-2. 会話型エージェント（ClaudeSDKClient使用）
+2. ~~会話型エージェント（ClaudeSDKClient使用）~~ ✅
 3. カスタムツール定義
 4. Hooks（ライフサイクル介入）
 
@@ -26,6 +27,7 @@ cagentsdk-sample/
 ├── .venv/                 # Python仮想環境（セットアップ済み）
 ├── 01_basic_query.py      # 基本サンプル（query()の使い方）
 ├── 02_file_agent.py       # ファイル操作エージェント（Write/Edit）
+├── 03_conversation_agent.py # 会話型エージェント（ClaudeSDKClient）
 ├── sample_output/         # エージェントが作成したファイル
 │   └── hello.py
 ├── LEARNING.md            # 詳細な学習記録

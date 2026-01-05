@@ -394,10 +394,62 @@ if hasattr(block, "input"):
 
 ---
 
+### 実習6: 会話型エージェント（2026/01/05）
+
+#### 作成ファイル
+`03_conversation_agent.py`
+
+#### query() vs ClaudeSDKClient
+
+| 特徴 | `query()` | `ClaudeSDKClient` |
+|------|-----------|-------------------|
+| セッション | 毎回新規 | 同じセッションを継続 |
+| 会話履歴 | 保持しない | 保持する |
+| 用途 | ワンショット | 対話型 |
+
+#### コードの基本構造
+
+```python
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
+
+async with ClaudeSDKClient(options=options) as client:
+    # ターン1
+    await client.query("最初の質問")
+    async for message in client.receive_response():
+        # 応答処理
+
+    # ターン2（前のターンを覚えている）
+    await client.query("その続きの質問")
+    async for message in client.receive_response():
+        # 応答処理
+```
+
+#### 実行結果の観察
+
+| ターン | 質問 | 参照 | 結果 |
+|--------|------|------|------|
+| 1 | 「Pythonファイルを教えて」 | - | 3ファイルを一覧表示 |
+| 2 | 「**その中で**一番シンプル？」 | ターン1 | 01_basic_query.py |
+| 3 | 「**それの**行数は？」 | ターン2 | 59行 |
+
+#### コンテキスト保持の証明
+
+- ターン2: 「その中で」→ ターン1のファイル一覧を参照
+- ターン3: 「それの」→ ターン2で言及したファイルを参照
+- ターン3はツールを使わず回答 → 既に情報を持っていた
+
+#### 学んだこと
+- **ClaudeSDKClient**: `async with`で自動接続/切断
+- **query() + receive_response()**: メッセージ送信と応答受信のペア
+- **コンテキスト保持**: 指示語（その、それ）が正しく解釈される
+- **効率性**: 過去に取得した情報は再取得不要
+
+---
+
 ## 次のステップ
 
 応用サンプルの候補：
 1. ~~ファイル操作エージェント（Write/Edit使用）~~ ✅ 完了
-2. 会話型エージェント（ClaudeSDKClient使用）
+2. ~~会話型エージェント（ClaudeSDKClient使用）~~ ✅ 完了
 3. カスタムツール定義
 4. Hooks（ライフサイクル介入）
