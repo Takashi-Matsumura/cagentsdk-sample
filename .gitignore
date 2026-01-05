@@ -7,6 +7,9 @@ __pycache__/
 # エージェントが生成するファイル・ディレクトリ
 sample_output/
 
+# プライベートメモ（Git管理外）
+PRIVATE_*.md
+
 # IDE
 .idea/
 .vscode/
