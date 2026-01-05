@@ -668,10 +668,116 @@ AIの動作:
 
 ---
 
-## 次のステップ
+### 実習8: Hooks（ライフサイクル介入）（2026/01/05）
 
-応用サンプルの候補：
+#### 作成ファイル
+`05_hooks.py`
+
+#### Hooksとは
+
+エージェントの動作に**介入**できる仕組み。
+
+| フック | タイミング | 用途 |
+|--------|----------|------|
+| `PreToolUse` | ツール実行**前** | ブロック、入力変換 |
+| `PostToolUse` | ツール実行**後** | 監査ログ |
+| `UserPromptSubmit` | プロンプト送信時 | コンテキスト追加 |
+| `Stop` | セッション終了時 | クリーンアップ |
+
+#### 重要: query() vs ClaudeSDKClient
+
+| 機能 | `query()` | `ClaudeSDKClient` |
+|------|-----------|-------------------|
+| Hooks | ❌ 限定的 | ✅ 完全対応 |
+| カスタムツール | ❌ 未対応 | ✅ 対応 |
+
+**Hooksもカスタムツールも、`ClaudeSDKClient` が必須。**
+
+#### コードの構造
+
+```python
+# フック関数の定義
+async def security_check(input_data: dict, tool_use_id: str, context: Any) -> dict:
+    tool_name = input_data.get("tool_name", "")
+    tool_input = input_data.get("tool_input", {})
+
+    # ブロックする場合
+    if ".env" in tool_input.get("file_path", ""):
+        return {
+            "permissionDecision": "deny",
+            "permissionDecisionReason": "理由",
+        }
+
+    # 許可する場合
+    return {}
+
+# オプションでHooksを設定
+options = ClaudeAgentOptions(
+    hooks={
+        "PreToolUse": [
+            HookMatcher(hooks=[security_check]),
+        ],
+        "PostToolUse": [
+            HookMatcher(hooks=[audit_log]),
+        ],
+    },
+)
+
+# ClaudeSDKClientで実行
+async with ClaudeSDKClient(options=options) as client:
+    await client.query(prompt)
+```
+
+#### 実行結果の観察
+
+**テスト1: 通常操作（許可）**
+```
+[Tool] Bash
+  🔍 [PreToolUse] セキュリティチェック: Bash
+     → コマンド: ls -la sample_output...
+  ✅ [ALLOWED]
+  📝 [PostToolUse AUDIT] Bash 実行完了
+```
+
+**テスト2: .envアクセス（ブロック）**
+```
+[Tool] Read
+  🔍 [PreToolUse] セキュリティチェック: Read
+     → ファイル: .../cagentsdk-sample/.env
+  🚫 [BLOCKED] .envファイルへのアクセスは禁止!
+```
+
+#### Hooksの戻り値パターン
+
+| パターン | 戻り値 | 効果 |
+|----------|--------|------|
+| 許可 | `{}` | デフォルト動作 |
+| ブロック | `{"permissionDecision": "deny", ...}` | ツール実行を拒否 |
+| 入力変換 | `{"permissionDecision": "allow", "updatedInput": {...}}` | 入力を修正して許可 |
+
+#### 実用的なユースケース
+
+| ユースケース | Hook | 説明 |
+|------------|------|------|
+| セキュリティ制御 | PreToolUse | 危険なコマンドやファイルをブロック |
+| 監査ログ | PostToolUse | すべてのツール実行を記録 |
+| 入力変換 | PreToolUse | パスやコマンドを修正・変換 |
+| 環境変数注入 | PreToolUse | APIキーや認証情報を動的に追加 |
+| セッション管理 | Stop | セッション終了時のクリーンアップ |
+
+#### 学んだこと
+- **Hooks**: エージェントのライフサイクルに介入できる仕組み
+- **ClaudeSDKClient必須**: query()ではHooksが動作しない
+- **PreToolUse**: ツール実行前にブロックや変換が可能
+- **PostToolUse**: ツール実行後に監査ログなどを記録
+- **HookMatcher**: 対象ツールを指定（正規表現）
+
+---
+
+## 学習完了！
+
+すべての応用サンプルを完了しました：
 1. ~~ファイル操作エージェント（Write/Edit使用）~~ ✅ 完了
 2. ~~会話型エージェント（ClaudeSDKClient使用）~~ ✅ 完了
 3. ~~カスタムツール定義~~ ✅ 完了
-4. Hooks（ライフサイクル介入）
+4. ~~Hooks（ライフサイクル介入）~~ ✅ 完了
